@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Winnie's Town</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html, body {
+            width: 100%;
+            height: 100%;
+            background: #2c3e50;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        #game-container {
+            width: 100%;
+            height: 100%;
+        }
+    </style>
+</head>
+<body>
+    <div id="game-container"></div>
+    <script src="https://cdn.jsdelivr.net/npm/phaser@3.60.0/dist/phaser.min.js"></script>
+    <script>
+    class BootScene extends Phaser.Scene {
+        constructor() { super({ key: 'BootScene' }); }
+
+        preload() {
+            const W = this.game.config.width;
+            const H = this.game.config.height;
+
+            // Loading bar background
+            const barBg = this.add.rectangle(W / 2, H / 2, W * 0.6, 20, 0x334455);
+            const bar = this.add.rectangle(W / 2 - W * 0.3, H / 2, 0, 16, 0xa8d8a8);
+            bar.setOrigin(0, 0.5);
+
+            const loadingText = this.add.text(W / 2, H / 2 - 36, "Loading Winnie's Town...", {
+                fontSize: '18px',
+                fill: '#d4e6d4',
+                fontFamily: 'Georgia, serif'
+            }).setOrigin(0.5);
+
+            this.load.on('progress', (value) => {
+                bar.setSize(W * 0.6 * value, 16);
+            });
+
+            // Assets — main assets folder only
+            this.load.image('cafefront',       'assets/cafefront.png');
+            this.load.image('mapbutton',        'assets/mapbutton.png');
+            this.load.image('shopbutton',       'assets/shopbutton.png');
+            this.load.image('decoratebutton',   'assets/decoratebutton.png');
+            this.load.image('camerabutton',     'assets/camerabutton.png');
+            this.load.image('starsholder',      'assets/starsholder.png');
+            this.load.image('currencyholder',   'assets/currencyholder.png');
+        }
+
+        create() {
+            this.scene.start('CafeFrontScene');
+        }
+    }
+
+    class CafeFrontScene extends Phaser.Scene {
+        constructor() {
+            super({ key: 'CafeFrontScene' });
+        }
+
+        create() {
+            const W = this.scale.width;
+            const H = this.scale.height;
+
+            // ── Background ──────────────────────────────────────────────
+            const bg = this.add.image(W / 2, H / 2, 'cafefront');
+            const coverScale = Math.max(W / bg.width, H / bg.height);
+            bg.setScale(coverScale).setDepth(0);
+
+            // ── Leaf Textures ────────────────────────────────────────────
+            this.createLeafTextures();
+
+            // ── Leaf Spawner ─────────────────────────────────────────────
+            // Seed a handful of leaves already on screen
+            for (let i = 0; i < 10; i++) {
+                this.time.delayedCall(i * 150, () => this.spawnLeaf(true));
+            }
+            // Then keep spawning continuously
+            this.time.addEvent({
+                delay: 650,
+                callback: () => this.spawnLeaf(false),
+                loop: true
+            });
+
+            // ── Top UI ───────────────────────────────────────────────────
+            this.createTopUI(W, H);
+
+            // ── Bottom Buttons ───────────────────────────────────────────
+            this.createBottomButtons(W, H);
+        }
+
+        // ── Leaf Helpers ─────────────────────────────────────────────────
+
+        createLeafTextures() {
+            const defs = [
+                { w: 24, h: 12, rx: 12, ry: 6,  fill: 0x4e9a40, stem: 0x2d5a1b },
+                { w: 18, h: 18, rx: 9,  ry: 9,  fill: 0x6ab64c, stem: 0x336622 },
+                { w: 30, h: 11, rx: 15, ry: 5.5,fill: 0x79b341, stem: 0x3a6a18 },
+                { w: 22, h: 13, rx: 11, ry: 6.5,fill: 0xb5c226, stem: 0x6a7310 },
+                { w: 16, h: 16, rx: 8,  ry: 8,  fill: 0x8bc34a, stem: 0x4a6e20 },
+            ];
+
+            defs.forEach((d, i) => {
+                const g = this.make.graphics({ add: false });
+                g.fillStyle(d.fill, 1);
+                g.fillEllipse(d.rx, d.ry, d.w, d.h);
+                // A tiny centre vein hint
+                g.lineStyle(1, d.stem, 0.6);
+                g.beginPath();
+                g.moveTo(d.rx, 1);
+                g.lineTo(d.rx, d.h - 1);
+                g.strokePath();
+                g.generateTexture(`leaf${i}`, d.w, d.h);
+                g.destroy();
+            });
+        }
+
+        spawnLeaf(fillScreen = false) {
+            const W = this.scale.width;
+            const H = this.scale.height;
+
+            const idx  = Phaser.Math.Between(0, 4);
+            const x    = Phaser.Math.Between(-20, W + 20);
+            const y    = fillScreen
+                ? Phaser.Math.Between(-40, H * 0.65)
+                : Phaser.Math.Between(-40, -10);
+
+            const leaf = this.add.image(x, y, `leaf${idx}`);
+            leaf.setScale(Phaser.Math.FloatBetween(0.55, 1.3));
+            leaf.setAlpha(Phaser.Math.FloatBetween(0.65, 1.0));
+            leaf.setDepth(5); // above bg, below UI
+
+            const fallMs  = Phaser.Math.Between(6000, 13000);
+            const swayPx  = Phaser.Math.Between(20, 65);
+            const swayMs  = Phaser.Math.Between(900, 2000);
+            const rotDeg  = Phaser.Math.Between(120, 260) * (Math.random() < 0.5 ? 1 : -1);
+            const rotMs   = Phaser.Math.Between(700, 2200);
+
+            // Fall
+            this.tweens.add({
+                targets: leaf,
+                y: H + 60,
+                duration: fallMs,
+                ease: 'Linear',
+                onComplete: () => leaf.destroy()
+            });
+            // Sway
+            this.tweens.add({
+                targets: leaf,
+                x: x + swayPx,
+                duration: swayMs,
+                ease: 'Sine.InOut',
+                yoyo: true,
+                repeat: -1
+            });
+            // Tumble
+            this.tweens.add({
+                targets: leaf,
+                angle: rotDeg,
+                duration: rotMs,
+                ease: 'Sine.InOut',
+                yoyo: true,
+                repeat: -1
+            });
+        }
+
+        // ── UI Helpers ────────────────────────────────────────────────────
+
+        createTopUI(W, H) {
+            const topY   = H * 0.065;
+            const sidePad = 10;
+            const maxH   = H * 0.075;
+            const maxW   = W * 0.44;
+
+            // Stars holder — top left
+            const stars = this.add.image(sidePad, topY, 'starsholder')
+                .setOrigin(0, 0.5)
+                .setDepth(20);
+            stars.setScale(Math.min(maxW / stars.width, maxH / stars.height));
+
+            // Currency holder — top right
+            const currency = this.add.image(W - sidePad, topY, 'currencyholder')
+                .setOrigin(1, 0.5)
+                .setDepth(20);
+            currency.setScale(Math.min(maxW / currency.width, maxH / currency.height));
+        }
+
+        createBottomButtons(W, H) {
+            const buttons = [
+                { key: 'mapbutton',      label: 'Map' },
+                { key: 'shopbutton',     label: 'Shop' },
+                { key: 'decoratebutton', label: 'Decorate' },
+                { key: 'camerabutton',   label: 'Camera' },
+            ];
+
+            const btnTargetH = Math.min(H * 0.085, 75);
+            const bottomY    = H - btnTargetH * 0.8;
+            const totalSpan  = W - 60;
+            const step       = totalSpan / (buttons.length - 1);
+            const startX     = 30;
+
+            buttons.forEach(({ key }, i) => {
+                const x   = startX + i * step;
+                const btn = this.add.image(x, bottomY, key).setDepth(20);
+                const sc  = btnTargetH / btn.height;
+                btn.setScale(sc);
+
+                btn.setInteractive({ useHandCursor: true });
+
+                btn.on('pointerover', () => {
+                    this.tweens.killTweensOf(btn);
+                    this.tweens.add({ targets: btn, scale: sc * 1.15, duration: 100, ease: 'Back.Out' });
+                });
+                btn.on('pointerout', () => {
+                    this.tweens.killTweensOf(btn);
+                    this.tweens.add({ targets: btn, scale: sc, duration: 120, ease: 'Linear' });
+                });
+                btn.on('pointerdown', () => {
+                    this.tweens.killTweensOf(btn);
+                    this.tweens.add({
+                        targets: btn, scale: sc * 0.88,
+                        duration: 80, ease: 'Linear', yoyo: true,
+                        onComplete: () => this.onButtonPress(key)
+                    });
+                });
+            });
+        }
+
+        onButtonPress(key) {
+            console.log('Button pressed:', key);
+            // Future: switch scenes or open menus
+        }
+    }
+
+    // ── Phaser Config ────────────────────────────────────────────────────
+    const config = {
+        type: Phaser.AUTO,
+        backgroundColor: '#4a7c59',
+        scale: {
+            mode: Phaser.Scale.FIT,
+            autoCenter: Phaser.Scale.CENTER_BOTH,
+            parent: 'game-container',
+            width: 480,
+            height: 854,
+        },
+        scene: [BootScene, CafeFrontScene]
+    };
+
+    new Phaser.Game(config);
+    </script>
+</body>
+</html>
