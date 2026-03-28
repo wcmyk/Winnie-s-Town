@@ -6,16 +6,8 @@
     <title>Winnie's Town</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        html, body {
-            width: 100%;
-            height: 100%;
-            background: #1a1a2e;
-            overflow: hidden;
-        }
-        #game-container {
-            width: 100%;
-            height: 100%;
-        }
+        html, body { width: 100%; height: 100%; background: #1a1a2e; overflow: hidden; }
+        #game-container { width: 100%; height: 100%; }
     </style>
 </head>
 <body>
@@ -23,7 +15,7 @@
     <script src="https://cdn.jsdelivr.net/npm/phaser@3.60.0/dist/phaser.min.js"></script>
     <script>
     // ─────────────────────────────────────────────────────────────────────────
-    // BOOT SCENE  –  load every asset, show a progress bar
+    // BOOT SCENE
     // ─────────────────────────────────────────────────────────────────────────
     class BootScene extends Phaser.Scene {
         constructor() { super({ key: 'BootScene' }); }
@@ -32,37 +24,34 @@
             const W = this.scale.width;
             const H = this.scale.height;
 
-            const barBg = this.add.rectangle(W / 2, H / 2, W * 0.6, 20, 0x334455);
-            const bar   = this.add.rectangle(W / 2 - W * 0.3, H / 2, 4, 16, 0xa8d8a8).setOrigin(0, 0.5);
+            const bar = this.add.rectangle(W / 2 - W * 0.3, H / 2, 4, 16, 0xa8d8a8).setOrigin(0, 0.5);
+            this.add.rectangle(W / 2, H / 2, W * 0.6, 20, 0x334455);
             this.add.text(W / 2, H / 2 - 36, "Loading Winnie's Town…", {
                 fontSize: '18px', fill: '#d4e6d4', fontFamily: 'Georgia, serif'
             }).setOrigin(0.5);
-
             this.load.on('progress', v => bar.setSize(Math.max(4, W * 0.6 * v), 16));
 
-            // ── assets (main folder only) ──
-            this.load.image('cafefront',       'assets/cafefront.png');
-            this.load.image('insidecafe',      'assets/insidecafe.png');
-            this.load.image('map',             'assets/map.png');
-            this.load.image('mapbutton',       'assets/mapbutton.png');
-            this.load.image('shopbutton',      'assets/shopbutton.png');
-            this.load.image('decoratebutton',  'assets/decoratebutton.png');
-            this.load.image('camerabutton',    'assets/camerabutton.png');
-            this.load.image('starsholder',     'assets/starsholder.png');
-            this.load.image('currencyholder',  'assets/currencyholder.png');
-
-            // enterbutton — graceful fallback if file not yet present
-            this.load.on('filecomplete-image-enterbutton', () => { this.enterBtnLoaded = true; });
-            this.load.image('enterbutton', 'assets/enterbutton.png');
+            // Scenes
+            this.load.image('cafefront',      'assets/cafefront.png');
+            this.load.image('insidecafe',     'assets/insidecafe.png');
+            this.load.image('map',            'assets/map.png');
+            // UI — v2 versions
+            this.load.image('enterbutton2',   'assets/enterbutton2.png');
+            this.load.image('mapbutton2',     'assets/mapbutton2.png');
+            this.load.image('shopbutton2',    'assets/shopbutton2.png');
+            this.load.image('decoratebutton2','assets/decoratebutton2.png');
+            this.load.image('camerabutton2',  'assets/camerabutton2.png');
+            this.load.image('starsholder2',   'assets/starsholder2.png');
+            this.load.image('currencyholder2','assets/currencyholder2.png');
+            // Inventory overlay
+            this.load.image('inventory_screen','assets/inventory_screen.png');
         }
 
-        create() {
-            this.scene.start('CafeFrontScene', { enterBtnLoaded: this.enterBtnLoaded });
-        }
+        create() { this.scene.start('CafeFrontScene'); }
     }
 
     // ─────────────────────────────────────────────────────────────────────────
-    // SHARED HELPERS  –  leaf textures + spawn
+    // SHARED HELPERS
     // ─────────────────────────────────────────────────────────────────────────
     function buildLeafTextures(scene) {
         const defs = [
@@ -84,20 +73,18 @@
         });
     }
 
-    function spawnLeaf(scene, fillScreen = false) {
-        const W = scene.scale.width;
-        const H = scene.scale.height;
-        const idx  = Phaser.Math.Between(0, 4);
-        const x    = Phaser.Math.Between(-20, W + 20);
-        const y    = fillScreen ? Phaser.Math.Between(-40, H * 0.65) : Phaser.Math.Between(-40, -10);
+    function spawnLeaf(scene, fillScreen) {
+        const W = scene.scale.width, H = scene.scale.height;
+        const idx = Phaser.Math.Between(0, 4);
+        const x   = Phaser.Math.Between(-20, W + 20);
+        const y   = fillScreen ? Phaser.Math.Between(-40, H * 0.65) : Phaser.Math.Between(-40, -10);
         const leaf = scene.add.image(x, y, `leaf${idx}`)
             .setScale(Phaser.Math.FloatBetween(0.55, 1.3))
             .setAlpha(Phaser.Math.FloatBetween(0.65, 1.0))
             .setDepth(5);
         const fallMs = Phaser.Math.Between(6000, 13000);
-        const swayPx = Phaser.Math.Between(20, 65);
         scene.tweens.add({ targets: leaf, y: H + 60, duration: fallMs, ease: 'Linear', onComplete: () => leaf.destroy() });
-        scene.tweens.add({ targets: leaf, x: x + swayPx, duration: Phaser.Math.Between(900, 2000), ease: 'Sine.InOut', yoyo: true, repeat: -1 });
+        scene.tweens.add({ targets: leaf, x: x + Phaser.Math.Between(20, 65), duration: Phaser.Math.Between(900, 2000), ease: 'Sine.InOut', yoyo: true, repeat: -1 });
         scene.tweens.add({ targets: leaf, angle: Phaser.Math.Between(120, 260) * (Math.random() < 0.5 ? 1 : -1), duration: Phaser.Math.Between(700, 2200), ease: 'Sine.InOut', yoyo: true, repeat: -1 });
     }
 
@@ -108,197 +95,169 @@
     }
 
     function addTopUI(scene) {
-        const W = scene.scale.width;
-        const H = scene.scale.height;
-        const maxH = H * 0.075;
-        const maxW = W * 0.44;
-
-        const stars = scene.add.image(10, H * 0.065, 'starsholder').setOrigin(0, 0.5).setDepth(20);
+        const W = scene.scale.width, H = scene.scale.height;
+        const maxH = H * 0.08, maxW = W * 0.44;
+        const stars = scene.add.image(10, H * 0.065, 'starsholder2').setOrigin(0, 0.5).setDepth(20);
         stars.setScale(Math.min(maxW / stars.width, maxH / stars.height));
-
-        const currency = scene.add.image(W - 10, H * 0.065, 'currencyholder').setOrigin(1, 0.5).setDepth(20);
+        const currency = scene.add.image(W - 10, H * 0.065, 'currencyholder2').setOrigin(1, 0.5).setDepth(20);
         currency.setScale(Math.min(maxW / currency.width, maxH / currency.height));
     }
 
-    function addBottomButtons(scene) {
-        const W = scene.scale.width;
-        const H = scene.scale.height;
-        const buttons = [
-            { key: 'mapbutton',      action: () => scene.scene.start('MapScene') },
-            { key: 'shopbutton',     action: () => console.log('Shop') },
-            { key: 'decoratebutton', action: () => console.log('Decorate') },
-            { key: 'camerabutton',   action: () => console.log('Camera') },
+    // Bottom HUD — grouped tightly in centre-bottom
+    function addBottomButtons(scene, onDecorate) {
+        const W = scene.scale.width, H = scene.scale.height;
+
+        const btnDefs = [
+            { key: 'mapbutton2',      action: () => { scene.cameras.main.fadeOut(300, 0,0,0); scene.cameras.main.once('camerafadeoutcomplete', () => scene.scene.start('MapScene')); } },
+            { key: 'shopbutton2',     action: () => console.log('Shop') },
+            { key: 'decoratebutton2', action: onDecorate },
+            { key: 'camerabutton2',   action: () => console.log('Camera') },
         ];
 
-        // 3× larger than original
-        const btnTargetH = Math.min(H * 0.255, 225);
-        const bottomY    = H - btnTargetH * 0.58;
-        const totalSpan  = W - 80;
-        const step       = totalSpan / (buttons.length - 1);
-        const startX     = 40;
+        // Target height — large enough to be tappable
+        const btnH = Math.min(H * 0.14, 120);
+        const gap  = Math.min(W * 0.03, 22);   // tight gap between buttons
+        const bottomY = H - btnH * 0.55;
 
-        const group = [];
+        // Pre-measure to find total group width and centre it
+        const tempImgs = btnDefs.map(d => scene.textures.get(d.key).getSourceImage());
+        const scales   = tempImgs.map(img => btnH / img.height);
+        const widths   = tempImgs.map((img, i) => img.width * scales[i]);
+        const totalW   = widths.reduce((a, b) => a + b, 0) + gap * (btnDefs.length - 1);
+        let curX = (W - totalW) / 2;
 
-        buttons.forEach(({ key, action }, i) => {
-            const x   = startX + i * step;
-            const btn = scene.add.image(x, bottomY, key).setDepth(20);
-            const sc  = btnTargetH / btn.height;
+        btnDefs.forEach(({ key, action }, i) => {
+            const sc  = scales[i];
+            const btn = scene.add.image(curX + widths[i] / 2, bottomY, key).setDepth(20);
             btn.setScale(sc);
             btn.setInteractive({ useHandCursor: true });
-
-            btn.on('pointerover', () => {
-                scene.tweens.killTweensOf(btn);
-                scene.tweens.add({ targets: btn, scale: sc * 1.12, duration: 100, ease: 'Back.Out' });
-            });
-            btn.on('pointerout', () => {
-                scene.tweens.killTweensOf(btn);
-                scene.tweens.add({ targets: btn, scale: sc, duration: 120, ease: 'Linear' });
-            });
+            btn.on('pointerover', () => { scene.tweens.killTweensOf(btn); scene.tweens.add({ targets: btn, scale: sc * 1.1, duration: 100, ease: 'Back.Out' }); });
+            btn.on('pointerout',  () => { scene.tweens.killTweensOf(btn); scene.tweens.add({ targets: btn, scale: sc, duration: 120, ease: 'Linear' }); });
             btn.on('pointerdown', () => {
                 scene.tweens.killTweensOf(btn);
                 scene.tweens.add({ targets: btn, scale: sc * 0.88, duration: 80, ease: 'Linear', yoyo: true, onComplete: action });
             });
-            group.push(btn);
+            curX += widths[i] + gap;
         });
+    }
 
-        return group;
+    // Inventory overlay — shown over any scene
+    function showInventoryOverlay(scene) {
+        const W = scene.scale.width, H = scene.scale.height;
+
+        // Dim backdrop
+        const dim = scene.add.rectangle(W / 2, H / 2, W, H, 0x000000, 0.55).setDepth(50).setInteractive();
+
+        // Inventory panel — scales to fit screen with padding
+        const padding = Math.min(W, H) * 0.05;
+        const inv = scene.add.image(W / 2, H / 2, 'inventory_screen').setDepth(51);
+        const sc  = Math.min((W - padding * 2) / inv.width, (H - padding * 2) / inv.height);
+        inv.setScale(sc);
+        inv.setAlpha(0);
+        inv.setScale(sc * 0.85);
+
+        // Slide-in tween
+        scene.tweens.add({ targets: inv, scale: sc, alpha: 1, duration: 280, ease: 'Back.Out' });
+
+        // Close on tap outside (or anywhere — tap inventory itself to close too)
+        const close = () => {
+            scene.tweens.add({
+                targets: [inv, dim], alpha: 0, scale: { value: sc * 0.85, duration: 180 },
+                duration: 180, ease: 'Linear',
+                onComplete: () => { dim.destroy(); inv.destroy(); }
+            });
+        };
+        dim.on('pointerdown', close);
+        inv.setInteractive();
+        inv.on('pointerdown', close);
     }
 
     // ─────────────────────────────────────────────────────────────────────────
-    // CAFE FRONT SCENE  –  exterior, enter button, no HUD until enter pressed
+    // CAFE FRONT SCENE  — exterior, pulsing enter button, NO bottom HUD
     // ─────────────────────────────────────────────────────────────────────────
     class CafeFrontScene extends Phaser.Scene {
         constructor() { super({ key: 'CafeFrontScene' }); }
 
-        create(data) {
-            const W = this.scale.width;
-            const H = this.scale.height;
+        create() {
+            const W = this.scale.width, H = this.scale.height;
 
-            // Background
             const bg = this.add.image(W / 2, H / 2, 'cafefront');
             bg.setScale(Math.max(W / bg.width, H / bg.height)).setDepth(0);
 
-            // Leaves
             startLeaves(this);
-
-            // Top UI
             addTopUI(this);
 
-            // ── Enter button (centre of screen) ───────────────────────────
-            const enterBtnSize = Math.min(W * 0.45, H * 0.18);
-            let enterBtn;
+            // Pulsing enter button — centred
+            const enterBtn = this.add.image(W / 2, H / 2, 'enterbutton2').setDepth(15);
+            const btnH = Math.min(H * 0.14, 120);
+            const sc = btnH / enterBtn.height;
+            enterBtn.setScale(sc);
 
-            if (data && data.enterBtnLoaded) {
-                enterBtn = this.add.image(W / 2, H / 2, 'enterbutton').setDepth(15);
-                const sc = Math.min(enterBtnSize / enterBtn.width, enterBtnSize / enterBtn.height);
-                enterBtn.setScale(sc);
-            } else {
-                // Fallback: draw a rounded pill button
-                const g = this.make.graphics({ add: false });
-                const bw = Math.round(enterBtnSize * 2.2);
-                const bh = Math.round(enterBtnSize * 0.7);
-                const r  = bh / 2;
-                g.fillStyle(0xf9c6d0, 1);
-                g.fillRoundedRect(0, 0, bw, bh, r);
-                g.lineStyle(3, 0xe07a8c, 1);
-                g.strokeRoundedRect(0, 0, bw, bh, r);
-                g.generateTexture('enterbutton_fb', bw, bh);
-                g.destroy();
+            this.tweens.add({ targets: enterBtn, scale: sc * 1.1, duration: 750, ease: 'Sine.InOut', yoyo: true, repeat: -1 });
 
-                enterBtn = this.add.image(W / 2, H / 2, 'enterbutton_fb').setDepth(15);
-                this.add.text(W / 2, H / 2, 'ENTER', {
-                    fontSize: Math.round(bh * 0.42) + 'px',
-                    fill: '#7a3040',
-                    fontFamily: 'Georgia, serif',
-                    fontStyle: 'bold'
-                }).setOrigin(0.5).setDepth(16);
-            }
-
-            // Pulse tween
-            this.tweens.add({
-                targets: enterBtn,
-                scale: enterBtn.scale * 1.12,
-                duration: 800,
-                ease: 'Sine.InOut',
-                yoyo: true,
-                repeat: -1
-            });
-
-            // Click → go to InsideCafeScene
             enterBtn.setInteractive({ useHandCursor: true });
             enterBtn.on('pointerdown', () => {
                 this.tweens.killTweensOf(enterBtn);
-                this.cameras.main.fadeOut(400, 0, 0, 0);
-                this.cameras.main.once('camerafadeoutcomplete', () => {
-                    this.scene.start('InsideCafeScene');
-                });
+                this.cameras.main.fadeOut(350, 0, 0, 0);
+                this.cameras.main.once('camerafadeoutcomplete', () => this.scene.start('InsideCafeScene'));
             });
         }
     }
 
     // ─────────────────────────────────────────────────────────────────────────
-    // INSIDE CAFE SCENE  –  interior view + full HUD
+    // INSIDE CAFE SCENE  — interior, full HUD, NO leaves
     // ─────────────────────────────────────────────────────────────────────────
     class InsideCafeScene extends Phaser.Scene {
         constructor() { super({ key: 'InsideCafeScene' }); }
 
         create() {
-            const W = this.scale.width;
-            const H = this.scale.height;
-
-            this.cameras.main.fadeIn(400, 0, 0, 0);
+            const W = this.scale.width, H = this.scale.height;
+            this.cameras.main.fadeIn(350, 0, 0, 0);
 
             const bg = this.add.image(W / 2, H / 2, 'insidecafe');
             bg.setScale(Math.max(W / bg.width, H / bg.height)).setDepth(0);
 
-            startLeaves(this);
             addTopUI(this);
-            addBottomButtons(this);
+            addBottomButtons(this, () => showInventoryOverlay(this));
         }
     }
 
     // ─────────────────────────────────────────────────────────────────────────
-    // MAP SCENE  –  full-screen map
+    // MAP SCENE
     // ─────────────────────────────────────────────────────────────────────────
     class MapScene extends Phaser.Scene {
         constructor() { super({ key: 'MapScene' }); }
 
         create() {
-            const W = this.scale.width;
-            const H = this.scale.height;
-
-            this.cameras.main.fadeIn(350, 0, 0, 0);
+            const W = this.scale.width, H = this.scale.height;
+            this.cameras.main.fadeIn(300, 0, 0, 0);
 
             const bg = this.add.image(W / 2, H / 2, 'map');
             bg.setScale(Math.max(W / bg.width, H / bg.height)).setDepth(0);
 
-            // Back button – top-left "✕" pill
-            const backW = Math.min(W * 0.18, 90);
+            // Back button
             const backH = Math.min(H * 0.055, 46);
+            const backW = backH * 2.6;
             const g = this.add.graphics().setDepth(20);
-            g.fillStyle(0x000000, 0.45);
+            g.fillStyle(0x000000, 0.5);
             g.fillRoundedRect(16, 16, backW, backH, backH / 2);
-
-            const backText = this.add.text(16 + backW / 2, 16 + backH / 2, '✕  Back', {
-                fontSize: Math.round(backH * 0.5) + 'px',
-                fill: '#ffffff',
-                fontFamily: 'Arial, sans-serif'
+            this.add.text(16 + backW / 2, 16 + backH / 2, '✕  Back', {
+                fontSize: Math.round(backH * 0.48) + 'px', fill: '#ffffff', fontFamily: 'Arial, sans-serif'
             }).setOrigin(0.5).setDepth(21);
 
-            const backZone = this.add.zone(16, 16, backW, backH).setOrigin(0).setDepth(22).setInteractive({ useHandCursor: true });
-            backZone.on('pointerdown', () => {
-                this.cameras.main.fadeOut(350, 0, 0, 0);
-                this.cameras.main.once('camerafadeoutcomplete', () => {
-                    this.scene.start('InsideCafeScene');
+            this.add.zone(16, 16, backW, backH).setOrigin(0).setDepth(22)
+                .setInteractive({ useHandCursor: true })
+                .on('pointerdown', () => {
+                    this.cameras.main.fadeOut(300, 0, 0, 0);
+                    this.cameras.main.once('camerafadeoutcomplete', () => this.scene.start('InsideCafeScene'));
                 });
-            });
         }
     }
 
     // ─────────────────────────────────────────────────────────────────────────
     // PHASER CONFIG
     // ─────────────────────────────────────────────────────────────────────────
-    const config = {
+    new Phaser.Game({
         type: Phaser.AUTO,
         backgroundColor: '#1a1a2e',
         scale: {
@@ -308,9 +267,7 @@
             height: window.innerHeight,
         },
         scene: [BootScene, CafeFrontScene, InsideCafeScene, MapScene]
-    };
-
-    new Phaser.Game(config);
+    });
     </script>
 </body>
 </html>
