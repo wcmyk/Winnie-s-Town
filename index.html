@@ -29,8 +29,8 @@
         constructor() { super({ key: 'BootScene' }); }
 
         preload() {
-            const W = this.game.config.width;
-            const H = this.game.config.height;
+            const W = this.scale.width;
+            const H = this.scale.height;
 
             // Loading bar background
             const barBg = this.add.rectangle(W / 2, H / 2, W * 0.6, 20, 0x334455);
@@ -246,11 +246,10 @@
         type: Phaser.AUTO,
         backgroundColor: '#4a7c59',
         scale: {
-            mode: Phaser.Scale.FIT,
-            autoCenter: Phaser.Scale.CENTER_BOTH,
+            mode: Phaser.Scale.RESIZE,
             parent: 'game-container',
-            width: 480,
-            height: 854,
+            width: window.innerWidth,
+            height: window.innerHeight,
         },
         scene: [BootScene, CafeFrontScene]
     };
